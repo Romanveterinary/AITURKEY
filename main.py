@@ -16,8 +16,10 @@ def main(page: ft.Page):
         import json
         import urllib.request
 
-        # 0. БАЗОВІ НАЛАШТУВАННЯ ДЛЯ ANDROID (БЕЗПЕЧНА ПАПКА)
-        SAFE_DIR = os.path.expanduser("~")
+        # 0. БАЗОВІ НАЛАШТУВАННЯ ДЛЯ ANDROID (БРОНЕБІЙНА ПАПКА)
+        # Тепер ми беремо папку, де лежить сам додаток. Туди Android завжди дозволяє запис!
+        SAFE_DIR = os.path.dirname(os.path.abspath(__file__))
+        
         KEY_FILE = os.path.join(SAFE_DIR, "api_key_turkey.txt")
         REPORTS_DIR = os.path.join(SAFE_DIR, "Рапорти_Індичка")
         DB_FILE = os.path.join(SAFE_DIR, "turkey_erp.db")
@@ -196,6 +198,9 @@ def main(page: ft.Page):
         
         fp_chat = ft.FilePicker(on_result=lambda e: (img_path.__setitem__(0, e.files[0].path), page.snack_bar.__setattr__('content', ft.Text("📷 Фото додано")), page.snack_bar.__setattr__('open', True), page.update()) if e.files else None)
         page.overlay.append(fp_chat)
+
+        def clear_chat(e):
+            chat_list.controls.clear(); page.snack_bar = ft.SnackBar(ft.Text("🧹 Очищено!"), bgcolor=ft.colors.BLUE); page.snack_bar.open = True; page.update()
 
         def send_chat(e):
             msg = chat_input.value
