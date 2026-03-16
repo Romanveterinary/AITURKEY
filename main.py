@@ -7,7 +7,6 @@ def main(page: ft.Page):
     page.padding = 0
 
     try:
-        # Всі модулі завантажуємо ТІЛЬКИ ПІСЛЯ успішного старту екрану!
         import os
         import time
         import datetime
@@ -16,10 +15,7 @@ def main(page: ft.Page):
         import json
         import urllib.request
 
-        # 0. БАЗОВІ НАЛАШТУВАННЯ ДЛЯ ANDROID (БРОНЕБІЙНА ПАПКА)
-        # Тепер ми беремо папку, де лежить сам додаток. Туди Android завжди дозволяє запис!
         SAFE_DIR = os.path.dirname(os.path.abspath(__file__))
-        
         KEY_FILE = os.path.join(SAFE_DIR, "api_key_turkey.txt")
         REPORTS_DIR = os.path.join(SAFE_DIR, "Рапорти_Індичка")
         DB_FILE = os.path.join(SAFE_DIR, "turkey_erp.db")
@@ -50,7 +46,6 @@ def main(page: ft.Page):
                 with open(path, "rb") as f: return base64.b64encode(f.read()).decode("utf-8")
             except: return None
 
-        # --- НОВИЙ, ЛЕГКИЙ І БЕЗПЕЧНИЙ ЗВ'ЯЗОК З ШІ ДЛЯ ТЕЛЕФОНІВ ---
         def call_gemini(prompt_text, img_path=None):
             api_key = get_saved_key()
             if not api_key: return "❌ Введіть API ключ у налаштуваннях!"
@@ -113,13 +108,14 @@ def main(page: ft.Page):
         dlg_settings = ft.AlertDialog(title=ft.Text("🔑 Налаштування"), content=tf_api_key, actions=[ft.ElevatedButton("Зберегти", on_click=lambda e: (save_key(tf_api_key.value), setattr(dlg_settings, 'open', False), page.update()))])
         page.overlay.append(dlg_settings)
 
+        # ОНОВЛЕНО: Повністю прибрано `alignment=ft.alignment.center`
         splash_view = ft.Container(
             content=ft.Column([
                 ft.Image(src="logo.png", width=150, height=150), 
                 ft.Text("ПРОСКУРІВСЬКА ІНДИЧКА", size=20, weight=ft.FontWeight.BOLD),
                 ft.ProgressRing()
             ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-            alignment=ft.alignment.center, expand=True
+            expand=True
         )
 
         dd_batch = ft.Dropdown(label="Оберіть партію", expand=True)
@@ -205,14 +201,24 @@ def main(page: ft.Page):
         def send_chat(e):
             msg = chat_input.value
             if not msg and not img_path[0]: return
-            chat_list.controls.append(ft.Text(f"👨‍⚕️: {msg}", color="blue", weight=ft.FontWeight.BOLD)); chat_input.value = ""; page.update()
+            
+            # ОНОВЛЕНО: Без ft.alignment.center_right
+            chat_list.controls.append(ft.Row([
+                ft.Container(content=ft.Text(f"👨‍⚕️: {msg}", color="white"), bgcolor=ft.colors.BLUE_600, padding=10, border_radius=10)
+            ], alignment=ft.MainAxisAlignment.END))
+            
+            chat_input.value = ""; page.update()
             
             s = get_batch_stats(dd_batch.value) if dd_batch.value else None
             prompt = f"Контекст: {dd_batch.value}. Залишок: {s['rem'] if s else '?'}. Вік: {s['age'] if s else '?'}.\nПитання: {msg}"
             
             ans = call_gemini(prompt, img_path[0])
             img_path[0] = None
-            chat_list.controls.append(ft.Container(content=ft.Markdown(ans), bgcolor=ft.colors.GREY_200, padding=10, border_radius=10))
+            
+            # ОНОВЛЕНО: Без ft.alignment.center_left
+            chat_list.controls.append(ft.Row([
+                ft.Container(content=ft.Markdown(ans), bgcolor=ft.colors.GREY_200, padding=10, border_radius=10)
+            ], alignment=ft.MainAxisAlignment.START))
             page.update()
 
         chat_tab = ft.Column([
@@ -230,7 +236,6 @@ def main(page: ft.Page):
         page.update(); time.sleep(1.5); splash_view.visible = False; main_view.visible = True; page.update()
 
     except Exception as e:
-        # АНТИ-БІЛИЙ ЕКРАН: Якщо щось пішло не так, показуємо червону помилку!
         error_text = f"🚨 КРИТИЧНА ПОМИЛКА СТАРТУ:\n{traceback.format_exc()}"
         page.add(ft.SafeArea(ft.Text(error_text, color="red", selectable=True)))
         page.update()
