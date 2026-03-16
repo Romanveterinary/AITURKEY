@@ -3,7 +3,7 @@ import traceback
 
 def main(page: ft.Page):
     page.title = "Проскурівська Індичка: ERP"
-    page.theme_mode = ft.ThemeMode.LIGHT
+    page.theme_mode = "light"
     page.padding = 0
 
     try:
@@ -111,7 +111,7 @@ def main(page: ft.Page):
         splash_view = ft.Container(
             content=ft.Column([
                 ft.Image(src="logo.png", width=150, height=150), 
-                ft.Text("ПРОСКУРІВСЬКА ІНДИЧКА", size=20, weight=ft.FontWeight.BOLD),
+                ft.Text("ПРОСКУРІВСЬКА ІНДИЧКА", size=20, weight="bold"),
                 ft.ProgressRing()
             ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             expand=True
@@ -132,7 +132,6 @@ def main(page: ft.Page):
             
             batches_listview.controls.clear()
             for b in batches:
-                # ОНОВЛЕНО: "delete" замість ft.icons.DELETE
                 batches_listview.controls.append(ft.Row([ft.Text(b, expand=True), ft.IconButton("delete", icon_color="red", on_click=lambda e, name=b: (sqlite3.connect(DB_FILE).execute("UPDATE batches SET status='CLOSED' WHERE name=?", (name,)).connection.commit(), refresh_batches_ui()))]))
             update_remaining_birds_ui(None)
             page.update()
@@ -146,14 +145,13 @@ def main(page: ft.Page):
 
         dlg_manage_batches = ft.AlertDialog(
             title=ft.Text("Керування партіями"),
-            # ОНОВЛЕНО: "add_circle"
             content=ft.Column([ft.Row([new_batch_input, new_batch_count, new_batch_age]), ft.ElevatedButton("Додати", icon="add_circle", icon_color="green", on_click=add_batch), batches_listview], height=300),
             actions=[ft.TextButton("Закрити", on_click=lambda e: (setattr(dlg_manage_batches, 'open', False), page.update()))]
         )
         page.overlay.append(dlg_manage_batches)
 
         # РАПОРТ
-        txt_remaining = ft.Text("Оновлюється...", size=16, weight=ft.FontWeight.BOLD, color="blue")
+        txt_remaining = ft.Text("Оновлюється...", size=16, weight="bold", color="blue")
         def update_remaining_birds_ui(e):
             s = get_batch_stats(dd_batch.value)
             txt_remaining.value = f"Залишок: {s['rem']} | Вік: {s['age']} днів"
@@ -183,8 +181,7 @@ def main(page: ft.Page):
             page.snack_bar = ft.SnackBar(ft.Text(f"✅ Збережено в {filepath}"), bgcolor="green"); page.snack_bar.open = True; page.update()
 
         report_tab = ft.ListView([
-            # ОНОВЛЕНО: "settings"
-            ft.Row([dd_batch, ft.IconButton("settings", icon_color=ft.colors.BLUE_700, on_click=lambda e: (setattr(dlg_manage_batches, 'open', True), page.update()))]),
+            ft.Row([dd_batch, ft.IconButton("settings", icon_color="blue", on_click=lambda e: (setattr(dlg_manage_batches, 'open', True), page.update()))]),
             txt_remaining, ft.Row([tf_w, tf_f]), ft.Row([tf_d, tf_c]), ft.Row([tf_t, tf_h, tf_a]), tf_notes,
             ft.Row([ft.ElevatedButton("💾", on_click=save_report, expand=True), ft.ElevatedButton("🤖 АНАЛІЗ", on_click=analyze_report, expand=True)])
         ], padding=10, expand=True)
@@ -194,7 +191,6 @@ def main(page: ft.Page):
         chat_input = ft.TextField(hint_text="Питання...", expand=True)
         img_path = [None]
         
-        # ОНОВЛЕНО: "cancel"
         preview_row = ft.Row([ft.Image(src="", width=80, height=80), ft.IconButton("cancel", icon_color="red", on_click=lambda e: (img_path.__setitem__(0, None), setattr(preview_row, 'visible', False), page.update()))], visible=False)
         fp_chat = ft.FilePicker(on_result=lambda e: (img_path.__setitem__(0, e.files[0].path), page.snack_bar.__setattr__('content', ft.Text("📷 Фото додано")), page.snack_bar.__setattr__('open', True), page.update()) if e.files else None)
         page.overlay.append(fp_chat)
@@ -202,7 +198,7 @@ def main(page: ft.Page):
         def send_chat(e):
             msg = chat_input.value
             if not msg and not img_path[0]: return
-            chat_list.controls.append(ft.Row([ft.Container(content=ft.Text(f"👨‍⚕️: {msg}", color="white"), bgcolor=ft.colors.BLUE_600, padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
+            chat_list.controls.append(ft.Row([ft.Container(content=ft.Text(f"👨‍⚕️: {msg}", color="white"), bgcolor="blue", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
             chat_input.value = ""; page.update()
             
             s = get_batch_stats(dd_batch.value) if dd_batch.value else None
@@ -211,20 +207,18 @@ def main(page: ft.Page):
             ans = call_gemini(prompt, img_path[0])
             img_path[0] = None
             
-            chat_list.controls.append(ft.Row([ft.Container(content=ft.Markdown(ans), bgcolor=ft.colors.GREY_200, padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
+            chat_list.controls.append(ft.Row([ft.Container(content=ft.Markdown(ans), bgcolor="#EEEEEE", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
             page.update()
 
         chat_tab = ft.Column([
-            # ОНОВЛЕНО: "smart_toy", "camera_alt", "send"
-            ft.Row([ft.Icon("smart_toy", color=ft.colors.ORANGE_700), ft.Text("🤖 AI Експерт", size=18, weight=ft.FontWeight.BOLD)]),
+            ft.Row([ft.Icon("smart_toy", color="orange"), ft.Text("🤖 AI Експерт", size=18, weight="bold")]),
             ft.Container(content=chat_list, expand=True),
             preview_row,
-            ft.Row([ft.IconButton("camera_alt", icon_color=ft.colors.BLUE, on_click=lambda _: fp_chat.pick_files()), chat_input, ft.IconButton("send", icon_color=ft.colors.GREEN, on_click=send_chat)])
+            ft.Row([ft.IconButton("camera_alt", icon_color="blue", on_click=lambda _: fp_chat.pick_files()), chat_input, ft.IconButton("send", icon_color="green", on_click=send_chat)])
         ], padding=10, expand=True)
 
         # ШАПКА ТА ГОЛОВНИЙ ЕКРАН
-        # ОНОВЛЕНО: "vpn_key"
-        top_app_bar = ft.Container(content=ft.Row([ft.Row([ft.Image(src="logo.png", width=30, height=30), ft.Text(" ERP Індичка", weight=ft.FontWeight.BOLD)]), ft.IconButton("vpn_key", icon_color=ft.colors.ORANGE_700, on_click=lambda e: (setattr(dlg_settings, 'open', True), page.update()))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), padding=10)
+        top_app_bar = ft.Container(content=ft.Row([ft.Row([ft.Image(src="logo.png", width=30, height=30), ft.Text(" ERP Індичка", weight="bold")]), ft.IconButton("vpn_key", icon_color="orange", on_click=lambda e: (setattr(dlg_settings, 'open', True), page.update()))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), padding=10)
         main_view = ft.Column([top_app_bar, ft.Tabs(selected_index=0, tabs=[ft.Tab(text="РАПОРТ", content=report_tab), ft.Tab(text="ЧАТ", content=chat_tab)], expand=True)], expand=True, visible=False)
 
         page.add(splash_view, main_view)
