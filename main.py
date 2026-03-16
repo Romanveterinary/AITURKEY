@@ -192,7 +192,16 @@ def main(page: ft.Page):
         img_path = [None]
         
         preview_row = ft.Row([ft.Image(src="", width=80, height=80), ft.IconButton("cancel", icon_color="red", on_click=lambda e: (img_path.__setitem__(0, None), setattr(preview_row, 'visible', False), page.update()))], visible=False)
-        fp_chat = ft.FilePicker(on_result=lambda e: (img_path.__setitem__(0, e.files[0].path), page.snack_bar.__setattr__('content', ft.Text("📷 Фото додано")), page.snack_bar.__setattr__('open', True), page.update()) if e.files else None)
+        
+        # ОНОВЛЕНО: Бронебійний FilePicker
+        fp_chat = ft.FilePicker()
+        def on_file_picked(e):
+            if e.files and len(e.files) > 0:
+                img_path[0] = e.files[0].path
+                page.snack_bar = ft.SnackBar(ft.Text("📷 Фото додано"))
+                page.snack_bar.open = True
+                page.update()
+        fp_chat.on_result = on_file_picked
         page.overlay.append(fp_chat)
 
         def send_chat(e):
