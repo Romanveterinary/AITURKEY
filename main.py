@@ -10,7 +10,6 @@ def main(page: ft.Page):
         import os
         import time
         import datetime
-        import base64
         import sqlite3
         import json
         import urllib.request
@@ -41,25 +40,14 @@ def main(page: ft.Page):
         def save_key(key):
             with open(KEY_FILE, "w") as f: f.write(key)
 
-        def get_img_base64(path):
-            try:
-                with open(path, "rb") as f: return base64.b64encode(f.read()).decode("utf-8")
-            except: return None
-
-        def call_gemini(prompt_text, img_path=None):
+        def call_gemini(prompt_text):
             api_key = get_saved_key()
             if not api_key: return "❌ Введіть API ключ у налаштуваннях!"
             
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-            parts = [{"text": prompt_text}]
-            
-            if img_path:
-                b64 = get_img_base64(img_path)
-                if b64: parts.append({"inline_data": {"mime_type": "image/jpeg", "data": b64}})
-                
             payload = {
                 "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-                "contents": [{"parts": parts}]
+                "contents": [{"parts": [{"text": prompt_text}]}]
             }
             
             try:
@@ -186,35 +174,20 @@ def main(page: ft.Page):
             ft.Row([ft.ElevatedButton("💾", on_click=save_report, expand=True), ft.ElevatedButton("🤖 АНАЛІЗ", on_click=analyze_report, expand=True)])
         ], padding=10, expand=True)
 
-        # ЧАТ
+        # ЧАТ (БЕЗ ФОТО)
         chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
         chat_input = ft.TextField(hint_text="Питання...", expand=True)
-        img_path = [None]
         
-        preview_row = ft.Row([ft.Image(src="", width=80, height=80), ft.IconButton("cancel", icon_color="red", on_click=lambda e: (img_path.__setitem__(0, None), setattr(preview_row, 'visible', False), page.update()))], visible=False)
-        
-        # ОНОВЛЕНО: Бронебійний FilePicker
-        fp_chat = ft.FilePicker()
-        def on_file_picked(e):
-            if e.files and len(e.files) > 0:
-                img_path[0] = e.files[0].path
-                page.snack_bar = ft.SnackBar(ft.Text("📷 Фото додано"))
-                page.snack_bar.open = True
-                page.update()
-        fp_chat.on_result = on_file_picked
-        page.overlay.append(fp_chat)
-
         def send_chat(e):
             msg = chat_input.value
-            if not msg and not img_path[0]: return
+            if not msg: return
             chat_list.controls.append(ft.Row([ft.Container(content=ft.Text(f"👨‍⚕️: {msg}", color="white"), bgcolor="blue", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
             chat_input.value = ""; page.update()
             
             s = get_batch_stats(dd_batch.value) if dd_batch.value else None
             prompt = f"Контекст: {dd_batch.value}. Залишок: {s['rem'] if s else '?'}. Вік: {s['age'] if s else '?'}.\nПитання: {msg}"
             
-            ans = call_gemini(prompt, img_path[0])
-            img_path[0] = None
+            ans = call_gemini(prompt)
             
             chat_list.controls.append(ft.Row([ft.Container(content=ft.Markdown(ans), bgcolor="#EEEEEE", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
             page.update()
@@ -222,8 +195,8 @@ def main(page: ft.Page):
         chat_tab = ft.Column([
             ft.Row([ft.Icon("smart_toy", color="orange"), ft.Text("🤖 AI Експерт", size=18, weight="bold")]),
             ft.Container(content=chat_list, expand=True),
-            preview_row,
-            ft.Row([ft.IconButton("camera_alt", icon_color="blue", on_click=lambda _: fp_chat.pick_files()), chat_input, ft.IconButton("send", icon_color="green", on_click=send_chat)])
+            # ВИДАЛЕНО КНОПКУ ФОТОАПАРАТА
+            ft.Row([chat_input, ft.IconButton("send", icon_color="green", on_click=send_chat)])
         ], padding=10, expand=True)
 
         # ШАПКА ТА ГОЛОВНИЙ ЕКРАН
