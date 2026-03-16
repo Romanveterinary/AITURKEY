@@ -174,7 +174,7 @@ def main(page: ft.Page):
             ft.Row([ft.ElevatedButton("💾", on_click=save_report, expand=True), ft.ElevatedButton("🤖 АНАЛІЗ", on_click=analyze_report, expand=True)])
         ], padding=10, expand=True)
 
-        # ЧАТ
+        # ЧАТ (БЕЗ ФОТО)
         chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
         chat_input = ft.TextField(hint_text="Питання...", expand=True)
         
@@ -192,7 +192,6 @@ def main(page: ft.Page):
             chat_list.controls.append(ft.Row([ft.Container(content=ft.Markdown(ans), bgcolor="#EEEEEE", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
             page.update()
 
-        # ОНОВЛЕНО: Тепер Column обгорнуто в Container для безпечного додавання відступів (padding)
         chat_tab = ft.Container(
             content=ft.Column([
                 ft.Row([ft.Icon("smart_toy", color="orange"), ft.Text("🤖 AI Експерт", size=18, weight="bold")]),
@@ -205,7 +204,19 @@ def main(page: ft.Page):
 
         # ШАПКА ТА ГОЛОВНИЙ ЕКРАН
         top_app_bar = ft.Container(content=ft.Row([ft.Row([ft.Image(src="logo.png", width=30, height=30), ft.Text(" ERP Індичка", weight="bold")]), ft.IconButton("vpn_key", icon_color="orange", on_click=lambda e: (setattr(dlg_settings, 'open', True), page.update()))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), padding=10)
-        main_view = ft.Column([top_app_bar, ft.Tabs(selected_index=0, tabs=[ft.Tab(text="РАПОРТ", content=report_tab), ft.Tab(text="ЧАТ", content=chat_tab)], expand=True)], expand=True, visible=False)
+        
+        # ОНОВЛЕНО: Бронебійні вкладки без параметра text
+        main_view = ft.Column([
+            top_app_bar, 
+            ft.Tabs(
+                selected_index=0, 
+                tabs=[
+                    ft.Tab(tab_content=ft.Text("РАПОРТ"), content=report_tab), 
+                    ft.Tab(tab_content=ft.Text("ЧАТ"), content=chat_tab)
+                ], 
+                expand=True
+            )
+        ], expand=True, visible=False)
 
         page.add(splash_view, main_view)
         refresh_batches_ui()
