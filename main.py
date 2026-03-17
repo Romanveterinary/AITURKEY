@@ -106,7 +106,6 @@ def main(page: ft.Page):
         )
 
         dd_batch = ft.Dropdown(label="Оберіть партію", expand=True)
-        dd_archive_batch = ft.Dropdown(label="Партія для Звіту", expand=True)
         new_batch_input = ft.TextField(label="Назва", expand=True)
         new_batch_count = ft.TextField(label="Голів", width=80)
         new_batch_age = ft.TextField(label="Вік", width=80, value="1")
@@ -115,7 +114,6 @@ def main(page: ft.Page):
         def refresh_batches_ui(e=None):
             batches = get_active_batches()
             dd_batch.options = [ft.dropdown.Option(b) for b in batches]
-            dd_archive_batch.options = [ft.dropdown.Option(b) for b in batches]
             if batches and dd_batch.value not in batches: dd_batch.value = batches[0]
             
             batches_listview.controls.clear()
@@ -168,13 +166,18 @@ def main(page: ft.Page):
             with open(filepath, "w", encoding="utf-8") as f: f.write(f"<html><head><meta charset='utf-8'></head><body><h2>Рапорт {dd_batch.value}</h2><p>Вік: {s['age']}</p>{ans}</body></html>")
             page.snack_bar = ft.SnackBar(ft.Text(f"✅ Збережено в {filepath}"), bgcolor="green"); page.snack_bar.open = True; page.update()
 
-        report_tab = ft.ListView([
-            ft.Row([dd_batch, ft.IconButton("settings", icon_color="blue", on_click=lambda e: (setattr(dlg_manage_batches, 'open', True), page.update()))]),
-            txt_remaining, ft.Row([tf_w, tf_f]), ft.Row([tf_d, tf_c]), ft.Row([tf_t, tf_h, tf_a]), tf_notes,
-            ft.Row([ft.ElevatedButton("💾", on_click=save_report, expand=True), ft.ElevatedButton("🤖 АНАЛІЗ", on_click=analyze_report, expand=True)])
-        ], padding=10, expand=True)
+        # Екран РАПОРТУ
+        report_screen = ft.Container(
+            content=ft.ListView([
+                ft.Row([dd_batch, ft.IconButton("settings", icon_color="blue", on_click=lambda e: (setattr(dlg_manage_batches, 'open', True), page.update()))]),
+                txt_remaining, ft.Row([tf_w, tf_f]), ft.Row([tf_d, tf_c]), ft.Row([tf_t, tf_h, tf_a]), tf_notes,
+                ft.Row([ft.ElevatedButton("💾 ЗБЕРЕГТИ", on_click=save_report, expand=True), ft.ElevatedButton("🤖 АНАЛІЗ", on_click=analyze_report, expand=True)])
+            ], padding=10, expand=True),
+            expand=True,
+            visible=True # Показуємо першим
+        )
 
-        # ЧАТ (БЕЗ ФОТО)
+        # ЧАТ
         chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
         chat_input = ft.TextField(hint_text="Питання...", expand=True)
         
@@ -192,30 +195,43 @@ def main(page: ft.Page):
             chat_list.controls.append(ft.Row([ft.Container(content=ft.Markdown(ans), bgcolor="#EEEEEE", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
             page.update()
 
-        chat_tab = ft.Container(
+        # Екран ЧАТУ
+        chat_screen = ft.Container(
             content=ft.Column([
                 ft.Row([ft.Icon("smart_toy", color="orange"), ft.Text("🤖 AI Експерт", size=18, weight="bold")]),
                 ft.Container(content=chat_list, expand=True),
                 ft.Row([chat_input, ft.IconButton("send", icon_color="green", on_click=send_chat)])
             ], expand=True),
             padding=10, 
-            expand=True
+            expand=True,
+            visible=False # Схований спочатку
+        )
+
+        # --- НАШІ ВЛАСНІ БРОНЕБІЙНІ ВКЛАДКИ ---
+        def switch_tab(tab_index):
+            report_screen.visible = (tab_index == 0)
+            chat_screen.visible = (tab_index == 1)
+            btn_tab_report.color = "blue" if tab_index == 0 else "black"
+            btn_tab_chat.color = "blue" if tab_index == 1 else "black"
+            page.update()
+
+        btn_tab_report = ft.TextButton("📊 РАПОРТ", expand=True, on_click=lambda e: switch_tab(0), color="blue")
+        btn_tab_chat = ft.TextButton("💬 ЧАТ", expand=True, on_click=lambda e: switch_tab(1), color="black")
+
+        custom_tabs_bar = ft.Container(
+            content=ft.Row([btn_tab_report, btn_tab_chat]),
+            bgcolor="#EEEEEE",
+            padding=5
         )
 
         # ШАПКА ТА ГОЛОВНИЙ ЕКРАН
         top_app_bar = ft.Container(content=ft.Row([ft.Row([ft.Image(src="logo.png", width=30, height=30), ft.Text(" ERP Індичка", weight="bold")]), ft.IconButton("vpn_key", icon_color="orange", on_click=lambda e: (setattr(dlg_settings, 'open', True), page.update()))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), padding=10)
         
-        # ОНОВЛЕНО: Бронебійні вкладки без параметра text
         main_view = ft.Column([
             top_app_bar, 
-            ft.Tabs(
-                selected_index=0, 
-                tabs=[
-                    ft.Tab(tab_content=ft.Text("РАПОРТ"), content=report_tab), 
-                    ft.Tab(tab_content=ft.Text("ЧАТ"), content=chat_tab)
-                ], 
-                expand=True
-            )
+            custom_tabs_bar, # Наше меню
+            report_screen,   # Екран 1
+            chat_screen      # Екран 2
         ], expand=True, visible=False)
 
         page.add(splash_view, main_view)
