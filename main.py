@@ -174,7 +174,7 @@ def main(page: ft.Page):
                 ft.Row([ft.ElevatedButton("💾 ЗБЕРЕГТИ", on_click=save_report, expand=True), ft.ElevatedButton("🤖 АНАЛІЗ", on_click=analyze_report, expand=True)])
             ], padding=10, expand=True),
             expand=True,
-            visible=True # Показуємо першим
+            visible=True
         )
 
         # ЧАТ
@@ -204,19 +204,17 @@ def main(page: ft.Page):
             ], expand=True),
             padding=10, 
             expand=True,
-            visible=False # Схований спочатку
+            visible=False
         )
 
-        # --- НАШІ ВЛАСНІ БРОНЕБІЙНІ ВКЛАДКИ ---
+        # --- НАШІ ВЛАСНІ БРОНЕБІЙНІ ВКЛАДКИ (БЕЗ КОЛЬОРІВ) ---
         def switch_tab(tab_index):
             report_screen.visible = (tab_index == 0)
             chat_screen.visible = (tab_index == 1)
-            btn_tab_report.color = "blue" if tab_index == 0 else "black"
-            btn_tab_chat.color = "blue" if tab_index == 1 else "black"
             page.update()
 
-        btn_tab_report = ft.TextButton("📊 РАПОРТ", expand=True, on_click=lambda e: switch_tab(0), color="blue")
-        btn_tab_chat = ft.TextButton("💬 ЧАТ", expand=True, on_click=lambda e: switch_tab(1), color="black")
+        btn_tab_report = ft.ElevatedButton("📊 РАПОРТ", expand=True, on_click=lambda e: switch_tab(0))
+        btn_tab_chat = ft.ElevatedButton("💬 ЧАТ", expand=True, on_click=lambda e: switch_tab(1))
 
         custom_tabs_bar = ft.Container(
             content=ft.Row([btn_tab_report, btn_tab_chat]),
@@ -229,9 +227,9 @@ def main(page: ft.Page):
         
         main_view = ft.Column([
             top_app_bar, 
-            custom_tabs_bar, # Наше меню
-            report_screen,   # Екран 1
-            chat_screen      # Екран 2
+            custom_tabs_bar,
+            report_screen,
+            chat_screen
         ], expand=True, visible=False)
 
         page.add(splash_view, main_view)
