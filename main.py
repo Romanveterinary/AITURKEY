@@ -118,7 +118,8 @@ def main(page: ft.Page):
             
             batches_listview.controls.clear()
             for b in batches:
-                batches_listview.controls.append(ft.Row([ft.Text(b, expand=True), ft.IconButton("delete", icon_color="red", on_click=lambda e, name=b: (sqlite3.connect(DB_FILE).execute("UPDATE batches SET status='CLOSED' WHERE name=?", (name,)).connection.commit(), refresh_batches_ui()))]))
+                # Всі проблемні кнопки замінено на залізобетонні з емодзі
+                batches_listview.controls.append(ft.Row([ft.Text(b, expand=True), ft.ElevatedButton("❌", on_click=lambda e, name=b: (sqlite3.connect(DB_FILE).execute("UPDATE batches SET status='CLOSED' WHERE name=?", (name,)).connection.commit(), refresh_batches_ui()))]))
             update_remaining_birds_ui(None)
             page.update()
 
@@ -131,13 +132,13 @@ def main(page: ft.Page):
 
         dlg_manage_batches = ft.AlertDialog(
             title=ft.Text("Керування партіями"),
-            content=ft.Column([ft.Row([new_batch_input, new_batch_count, new_batch_age]), ft.ElevatedButton("Додати", icon="add_circle", icon_color="green", on_click=add_batch), batches_listview], height=300),
+            content=ft.Column([ft.Row([new_batch_input, new_batch_count, new_batch_age]), ft.ElevatedButton("➕ Додати", on_click=add_batch), batches_listview], height=300),
             actions=[ft.TextButton("Закрити", on_click=lambda e: (setattr(dlg_manage_batches, 'open', False), page.update()))]
         )
         page.overlay.append(dlg_manage_batches)
 
         # РАПОРТ
-        txt_remaining = ft.Text("Оновлюється...", size=16, weight="bold", color="blue")
+        txt_remaining = ft.Text("Оновлюється...", size=16, weight="bold")
         def update_remaining_birds_ui(e):
             s = get_batch_stats(dd_batch.value)
             txt_remaining.value = f"Залишок: {s['rem']} | Вік: {s['age']} днів"
@@ -154,7 +155,7 @@ def main(page: ft.Page):
                 conn = sqlite3.connect(DB_FILE)
                 conn.execute("INSERT INTO daily_reports (batch_name, date, water, feed, dead, cull, notes) VALUES (?, ?, ?, ?, ?, ?, ?)", (dd_batch.value, datetime.datetime.now().strftime('%Y-%m-%d'), float(tf_w.value), float(tf_f.value), int(tf_d.value), int(tf_c.value), tf_notes.value))
                 conn.commit(); conn.close()
-                page.snack_bar = ft.SnackBar(ft.Text("✅ Збережено"), bgcolor="green"); page.snack_bar.open = True; update_remaining_birds_ui(None)
+                page.snack_bar = ft.SnackBar(ft.Text("✅ Збережено")); page.snack_bar.open = True; update_remaining_birds_ui(None)
                 tf_d.value="0"; tf_c.value="0"; page.update()
 
         def analyze_report(e):
@@ -164,13 +165,16 @@ def main(page: ft.Page):
             ans = call_gemini(prompt)
             filepath = os.path.join(REPORTS_DIR, f"Рапорт_{dd_batch.value}_{int(time.time())}.html")
             with open(filepath, "w", encoding="utf-8") as f: f.write(f"<html><head><meta charset='utf-8'></head><body><h2>Рапорт {dd_batch.value}</h2><p>Вік: {s['age']}</p>{ans}</body></html>")
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Збережено в {filepath}"), bgcolor="green"); page.snack_bar.open = True; page.update()
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Збережено в {filepath}")); page.snack_bar.open = True; page.update()
 
         # Екран РАПОРТУ
         report_screen = ft.Container(
             content=ft.ListView([
-                ft.Row([dd_batch, ft.IconButton("settings", icon_color="blue", on_click=lambda e: (setattr(dlg_manage_batches, 'open', True), page.update()))]),
-                txt_remaining, ft.Row([tf_w, tf_f]), ft.Row([tf_d, tf_c]), ft.Row([tf_t, tf_h, tf_a]), tf_notes,
+                # Виправили верстку: тепер вибір партії на окремому широкому рядку!
+                ft.Row([ft.Text("Поточна партія:", weight="bold"), ft.ElevatedButton("⚙️ Керування", on_click=lambda e: (setattr(dlg_manage_batches, 'open', True), page.update()))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                dd_batch,
+                txt_remaining, 
+                ft.Row([tf_w, tf_f]), ft.Row([tf_d, tf_c]), ft.Row([tf_t, tf_h, tf_a]), tf_notes,
                 ft.Row([ft.ElevatedButton("💾 ЗБЕРЕГТИ", on_click=save_report, expand=True), ft.ElevatedButton("🤖 АНАЛІЗ", on_click=analyze_report, expand=True)])
             ], padding=10, expand=True),
             expand=True,
@@ -184,7 +188,7 @@ def main(page: ft.Page):
         def send_chat(e):
             msg = chat_input.value
             if not msg: return
-            chat_list.controls.append(ft.Row([ft.Container(content=ft.Text(f"👨‍⚕️: {msg}", color="white"), bgcolor="blue", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
+            chat_list.controls.append(ft.Row([ft.Container(content=ft.Text(f"👨‍⚕️: {msg}"), bgcolor="#BBDEFB", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
             chat_input.value = ""; page.update()
             
             s = get_batch_stats(dd_batch.value) if dd_batch.value else None
@@ -198,16 +202,16 @@ def main(page: ft.Page):
         # Екран ЧАТУ
         chat_screen = ft.Container(
             content=ft.Column([
-                ft.Row([ft.Icon("smart_toy", color="orange"), ft.Text("🤖 AI Експерт", size=18, weight="bold")]),
+                ft.Text("🤖 AI Експерт", size=18, weight="bold"),
                 ft.Container(content=chat_list, expand=True),
-                ft.Row([chat_input, ft.IconButton("send", icon_color="green", on_click=send_chat)])
+                # Кнопка відправки з емодзі
+                ft.Row([chat_input, ft.ElevatedButton("📤", on_click=send_chat)])
             ], expand=True),
             padding=10, 
             expand=True,
             visible=False
         )
 
-        # --- НАШІ ВЛАСНІ БРОНЕБІЙНІ ВКЛАДКИ (БЕЗ КОЛЬОРІВ) ---
         def switch_tab(tab_index):
             report_screen.visible = (tab_index == 0)
             chat_screen.visible = (tab_index == 1)
@@ -223,7 +227,7 @@ def main(page: ft.Page):
         )
 
         # ШАПКА ТА ГОЛОВНИЙ ЕКРАН
-        top_app_bar = ft.Container(content=ft.Row([ft.Row([ft.Image(src="logo.png", width=30, height=30), ft.Text(" ERP Індичка", weight="bold")]), ft.IconButton("vpn_key", icon_color="orange", on_click=lambda e: (setattr(dlg_settings, 'open', True), page.update()))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), padding=10)
+        top_app_bar = ft.Container(content=ft.Row([ft.Row([ft.Image(src="logo.png", width=30, height=30), ft.Text(" ERP Індичка", weight="bold")]), ft.ElevatedButton("🔑 API", on_click=lambda e: (setattr(dlg_settings, 'open', True), page.update()))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), padding=10)
         
         main_view = ft.Column([
             top_app_bar, 
